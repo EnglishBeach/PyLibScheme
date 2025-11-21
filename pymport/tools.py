@@ -20,17 +20,6 @@ from pymport import parser
 #     return g
 
 
-def clusterize(g: parser.Graph, cluster_volume=1) -> parser.Graph:
-    g = g.model_copy(deep=True)
-    nodes = g.nodes
-    clusters, _ = _make_groups(
-        nodes, level=1, gid=len(nodes), cluster_volume=cluster_volume
-    )
-
-    g.entries = clusters + g.entries
-    return g
-
-
 def colorize(g: parser.Graph):
     colors_len = max(n.label.count(".") if n.label else 0 for n in g.nodes) + 1
     color_map = _get_colormap(colors_len)
@@ -65,47 +54,59 @@ def prune(g: parser.Graph, prune_names: list[str]):
     return g
 
 
-def _make_groups(
+def clusterize(g: parser.Graph, ter_groups: bool) -> parser.Graph:
+    g = g.model_copy(deep=True)
+    nodes = g.nodes
+    clusters, _ = _clusterize(
+        nodes,
+        level=1,
+        max_id=len(nodes),
+        end_size=not ter_groups,
+    )
+
+    g.entries = clusters + g.entries
+    return g
+
+
+def _clusterize(
     nodes: list[parser.Node],
     level: int,
-    gid: int,
-    cluster_volume: int,
-    external_gid: int | None = None,
+    max_id: int,
+    end_size: int,
+    gid: int | None = None,
 ) -> tuple[list[parser.Node], int]:
     groups = collections.defaultdict(lambda: [])
     add_nodes = []
     for n in nodes:
         titles = n.norm.split(".")
-        if len(titles) < level + 1:
-            continue
-        else:
+        if level < len(titles):
             groups[titles[level]].append(n)
 
     for group, group_nodes in groups.items():
-        if len(group_nodes) > cluster_volume:
-            gid += 1
+        if len(group_nodes) > end_size:
+            max_id += 1
             add_nodes.append(
                 parser.Node(
                     isGroup=1,
-                    id=gid,
+                    id=max_id,
                     name=f'"{group}"',
                     label=f'"{group}"',
-                    gid=external_gid,
+                    gid=gid,
                 )
             )
             for n in group_nodes:
-                n.gid = gid
+                n.gid = max_id
 
-            inner_clusters, gid = _make_groups(
+            inner_clusters, max_id = _clusterize(
                 group_nodes,
                 level=level + 1,
-                gid=gid,
-                external_gid=gid,
-                cluster_volume=cluster_volume,
+                max_id=max_id,
+                gid=max_id,
+                end_size=end_size,
             )
             add_nodes.extend(inner_clusters)
 
-    return add_nodes, gid
+    return add_nodes, max_id
 
 
 def _get_colormap(n: int) -> list[str]:

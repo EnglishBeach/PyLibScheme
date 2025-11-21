@@ -3,14 +3,28 @@ import colorsys
 
 from pymport import parser
 
+# def rename_nodes(g: parser.Graph, label2name: bool = True) -> parser.Graph:
+#     g = g.model_copy(deep=True)
+#     for n in g.nodes:
+#         if label2name:
+#             n.name = n.label if n.label else n.name
+#         else:
+#             n.label = n.name if n.name else n.label
+#     return g
 
-def clusterize(g: parser.Graph):
+
+# def add_name_nodes(g: parser.Graph, prefix: str) -> parser.Graph:
+#     g = g.model_copy(deep=True)
+#     for n in g.nodes:
+#         n.name = f"{prefix}.{n.name}"
+#     return g
+
+
+def clusterize(g: parser.Graph, cluster_volume=1) -> parser.Graph:
     g = g.model_copy(deep=True)
     nodes = g.nodes
-    clusters = _make_groups(
-        nodes,
-        level=1,
-        max_id=len(nodes),
+    clusters, _ = _make_groups(
+        nodes, level=1, gid=len(nodes), cluster_volume=cluster_volume
     )
 
     g.entries = clusters + g.entries
@@ -32,7 +46,7 @@ def colorize(g: parser.Graph):
 
 def prune(g: parser.Graph, prune_names: list[str]):
     g = g.model_copy(deep=True)
-    prune_ids = [i.id for i in g.nodes if i.norm_name in prune_names]
+    prune_ids = [i.id for i in g.nodes if i.norm in prune_names]
 
     entries = []
     for i in g.entries.copy():
@@ -54,43 +68,44 @@ def prune(g: parser.Graph, prune_names: list[str]):
 def _make_groups(
     nodes: list[parser.Node],
     level: int,
-    max_id: int,
-    cluster_volume: int = 1,
+    gid: int,
+    cluster_volume: int,
     external_gid: int | None = None,
-) -> list[parser.Node]:
+) -> tuple[list[parser.Node], int]:
     groups = collections.defaultdict(lambda: [])
     add_nodes = []
     for n in nodes:
-        titles = n.norm_name.split(".")
+        titles = n.norm.split(".")
         if len(titles) < level + 1:
             continue
         else:
             groups[titles[level]].append(n)
 
-    for i, (group, group_nodes) in enumerate(groups.items()):
+    for group, group_nodes in groups.items():
         if len(group_nodes) > cluster_volume:
-            gid = max_id + 1 + i
-            node = parser.Node(
-                isGroup=1,
-                id=gid,
-                name=f'"{group}"',
-                label=f'"{group}"',
-                gid=external_gid,
+            gid += 1
+            add_nodes.append(
+                parser.Node(
+                    isGroup=1,
+                    id=gid,
+                    name=f'"{group}"',
+                    label=f'"{group}"',
+                    gid=external_gid,
+                )
             )
-            add_nodes.append(node)
             for n in group_nodes:
                 n.gid = gid
 
-            inner_clusters = _make_groups(
+            inner_clusters, gid = _make_groups(
                 group_nodes,
                 level=level + 1,
-                max_id=max_id + 1 + i,
+                gid=gid,
                 external_gid=gid,
+                cluster_volume=cluster_volume,
             )
-            max_id = max_id + 1 + i
             add_nodes.extend(inner_clusters)
 
-    return add_nodes
+    return add_nodes, gid
 
 
 def _get_colormap(n: int) -> list[str]:

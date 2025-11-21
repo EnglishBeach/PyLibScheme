@@ -5,7 +5,7 @@ from pydantic import BaseModel, model_validator
 
 
 class Entry(BaseModel):
-    _name = "entry"
+    _entry_name = "entry"
 
     @classmethod
     def parse(cls, strings: list[str]):
@@ -32,7 +32,7 @@ class Entry(BaseModel):
 
         return "\n".join(
             (
-                f"{self._name} [",
+                f"{self._entry_name} [",
                 *data,
                 "]",
             )
@@ -43,29 +43,24 @@ CLASS_MAP: dict[str, type[Entry]] = {}
 
 
 def mapped(cls):
-    CLASS_MAP.update({cls._name.default: cls})
+    CLASS_MAP.update({cls._entry_name.default: cls})
     return cls
-
-
-def replace(string: str, repl_map: dict[str, str]):
-    a = string
-    for key, val in repl_map.items():
-        a = a.replace(key, val)
-    return a
 
 
 @mapped
 class Graphics(Entry):
-    _name = "graphics"
+    _entry_name = "graphics"
 
-    hasFill: int
+    hasFill: Optional[int] = None
     type: Optional[str] = None
-    fill: str
+    fill: Optional[str] = None
+    targetArrow: Optional[str] = None
+    sourceArrow: Optional[str] = None
 
 
 @mapped
 class LGraphics(Entry):
-    _name = "LabelGraphics"
+    _entry_name = "LabelGraphics"
 
     text: Optional[str] = None
     fontColor: Optional[str] = None
@@ -78,7 +73,7 @@ _text_map = {"\\n": "", "\\.": "."}
 
 @mapped
 class Node(Entry):
-    _name = "node"
+    _entry_name = "node"
 
     id: int
     gid: Optional[int] = None
@@ -95,21 +90,22 @@ class Node(Entry):
 
     @model_validator(mode="after")
     def validator(self):
-        name = replace(self.label, _text_map) if self.label else self.name
-        name = name if name else "empty"
-        name = name.replace('"', "")
-        self.name = self.label = f'"{name}"'
+        label = _replace(self.label, _text_map) if self.label else self.name
+        label = label.replace('"', "")
+        self.label = f'"{label}"'
+
+        self.name = self.name if self.name else "empty"
         self.LabelGraphics = None
         return self
 
     @property
-    def norm_name(self):
+    def norm(self):
         return self.name.replace('"', "")
 
 
 @mapped
 class Edge(Entry):
-    _name = "edge"
+    _entry_name = "edge"
 
     id: int
     source: int
@@ -167,3 +163,10 @@ class Graph(BaseModel):
     @property
     def edges(self) -> list[Edge]:
         return [i for i in self.entries if isinstance(i, Edge)]
+
+
+def _replace(string: str, repl_map: dict[str, str]):
+    a = string
+    for key, val in repl_map.items():
+        a = a.replace(key, val)
+    return a

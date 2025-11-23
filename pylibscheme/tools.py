@@ -5,6 +5,15 @@ from pylibscheme import parser
 
 
 def colorize(g: parser.Graph):
+    """
+    Colorize graph, color depends on name:
+    a - color 1
+    a.b - color 2
+    ...
+
+    :param g: Graph
+    :return: Colored graph
+    """
     colors_len = max(n.norm.count(".") if n.norm else 0 for n in g.nodes) + 1
     color_map = _get_colormap(colors_len)
     m = 0
@@ -18,6 +27,13 @@ def colorize(g: parser.Graph):
 
 
 def prune(g: parser.Graph, prune_names: list[str]):
+    """
+    Prune nodes linked with `__init__.py` files
+
+    :param g: Graph
+    :param prune_names: Added `__init__.py` files path-names (a.b.c format)
+    :return: Pruned graph
+    """
     g = g.copy()
     prune_ids = [i.id for i in g.nodes if i.norm in prune_names]
 
@@ -37,6 +53,13 @@ def prune(g: parser.Graph, prune_names: list[str]):
 
 
 def clusterize(g: parser.Graph, ter_groups: bool) -> parser.Graph:
+    """
+    Clusterize graph, mark folder hierarchy recursively
+
+    :param g: Graph
+    :param ter_groups: Create groups from last name (stem: a.b.c -> c)
+    :return: Clustered graph
+    """
     g = g.copy()
     nodes = g.nodes
     clusters, _ = _clusterize(
@@ -50,6 +73,7 @@ def clusterize(g: parser.Graph, ter_groups: bool) -> parser.Graph:
     return g
 
 
+# TODO: may be end_size can work incorrect
 def _clusterize(
     nodes: list[parser.Node],
     level: int,
@@ -57,6 +81,16 @@ def _clusterize(
     end_size: int,
     gid: int | None = None,
 ) -> tuple[list[parser.Node], int]:
+    """
+    Recurrent clusterize function. Add node groups
+
+    :param nodes: Nodes to clusterize
+    :param level: Start clusterize level
+    :param max_id: Max id
+    :param end_size: End clusterize level
+    :param gid: Group id, defaults to None
+    :return: Group nodes, max_id
+    """
     groups = collections.defaultdict(lambda: [])
     add_nodes = []
     for n in nodes:
@@ -92,6 +126,12 @@ def _clusterize(
 
 
 def _get_colormap(n: int) -> list[str]:
+    """
+    Generate colormap from n range
+
+    :param n: N colors
+    :return: Color list
+    """
     HSV_tuples = [(x / n * 0.8, 1, 1) for x in range(n)]
     RGB_tuples = [colorsys.hsv_to_rgb(*x) for x in HSV_tuples]
     return [f"#{int(255*r):02X}{int(255*g):02X}{int(255*b):02X}" for r, g, b in RGB_tuples]

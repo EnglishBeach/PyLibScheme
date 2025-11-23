@@ -3,6 +3,13 @@ from pathlib import Path
 
 
 def create_inits(lib: Path, workdir: Path) -> tuple[Path, list[str]]:
+    """
+    Create empty `__init__.py` files in library folder recursively
+
+    :param lib: Library path
+    :param workdir: Workdir
+    :return: Library path and added `__init__.py` files
+    """
     out = workdir / lib.stem
     shutil.copytree(src=lib, dst=out)
 
@@ -17,6 +24,12 @@ def create_inits(lib: Path, workdir: Path) -> tuple[Path, list[str]]:
 
 
 def _create_inits(path: Path) -> list[Path]:
+    """
+    Recurrent create `__init__.py` function
+
+    :param path: Library path
+    :return: Added `__init__.py` files
+    """
     add_list = []
     add = False
     init_exists = False

@@ -4,12 +4,24 @@ import copy
 from pathlib import Path
 from typing import Optional
 
+_text_map = {"\\n": "", "\\.": "."}
+
+_CLASS_MAP: dict[str, type[Entry]] = {}
+
 
 class Entry:
+    """Graph entry"""
+
     _entry_name = "entry"
 
     @classmethod
     def parse(cls, strings: list[str]):
+        """
+        Parse line
+
+        :param strings: String
+        :return: Entry
+        """
         fields = {}
 
         i = strings.pop(0)
@@ -17,7 +29,7 @@ class Entry:
             title, data = i.split()
 
             if data.strip() == "[":
-                data = CLASS_MAP[title].parse(strings)
+                data = _CLASS_MAP[title].parse(strings)
 
             fields[title] = data
             i = strings.pop(0)
@@ -41,11 +53,11 @@ class Entry:
         )
 
 
-CLASS_MAP: dict[str, type[Entry]] = {}
-
-
 def mapped(cls):
-    CLASS_MAP.update({cls._entry_name: cls})
+    """
+    Map entry: entry name in graph
+    """
+    _CLASS_MAP.update({cls._entry_name: cls})
     return cls
 
 
@@ -85,9 +97,6 @@ class LGraphics(Entry):
         self.fontColor = fontColor
         self.fontSize = int(fontSize) if fontSize else None
         self.fontName = fontName
-
-
-_text_map = {"\\n": "", "\\.": "."}
 
 
 @mapped
@@ -154,6 +163,8 @@ class Edge(Entry):
 
 
 class Graph:
+    """Graph representation"""
+
     @property
     def nodes(self) -> list[Node]:
         return [i for i in self.entries if isinstance(i, Node)]
@@ -185,7 +196,7 @@ class Graph:
         i = lines.pop(0)
         while i.strip() != "]":
             title, data = i.split()
-            entries.append(CLASS_MAP[title].parse(lines))
+            entries.append(_CLASS_MAP[title].parse(lines))
             i = lines.pop(0)
 
         return Graph(
@@ -209,6 +220,13 @@ class Graph:
 
 
 def _replace(string: str, repl_map: dict[str, str]):
+    """
+    Replace characters in string
+
+    :param string: String
+    :param repl_map: Replace map
+    :return: Replaced string
+    """
     a = string
     for key, val in repl_map.items():
         a = a.replace(key, val)

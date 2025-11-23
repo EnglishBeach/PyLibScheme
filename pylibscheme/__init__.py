@@ -5,7 +5,15 @@ from pathlib import Path
 from pylibscheme import converters, files, parser, tools
 
 
-def create_import_graph(lib_path: str, out_file: Path = Path("out_pkg.gml")) -> Path:
+def create_import_graph(lib_path: str, out_file: str = "out_pkg.gml") -> Path:
+    """
+    Create import graph from Python library
+
+    :param lib_path: Library folder path
+    :param out_file: Output file path, defaults to "out_pkg.gml"
+    :return: Import graph `.gml` file path
+    """
+    out = Path(out_file)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
 
@@ -24,13 +32,21 @@ def create_import_graph(lib_path: str, out_file: Path = Path("out_pkg.gml")) -> 
         g = tools.colorize(g)
         g = tools.prune(g, inits)
 
-        save_file = tmp / out_file.name
+        save_file = tmp / out.name
         g.save(file=save_file)
         shutil.copy(src=save_file, dst=out_file)
-    return out_file
+    return out
 
 
-def create_class_graph(lib_path: str, out_file: Path = Path("out_cls.gml")):
+def create_class_graph(lib_path: str, out_file: str = "out_cls.gml"):
+    """
+    Classes graph path
+
+    :param lib_path: Library folder path
+    :param out_file: Output file path, defaults to "out_cls.gml"
+    :return: Classes graph `.gml` file path
+    """
+    out = Path(out_file)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
 
@@ -45,7 +61,7 @@ def create_class_graph(lib_path: str, out_file: Path = Path("out_cls.gml")):
 
         g = tools.clusterize(g, ter_groups=True)
 
-        save_file = tmp / out_file.name
+        save_file = tmp / out.name
         g.save(file=save_file)
-        shutil.copy(src=save_file, dst=out_file)
-        return out_file
+        shutil.copy(src=save_file, dst=out)
+        return out

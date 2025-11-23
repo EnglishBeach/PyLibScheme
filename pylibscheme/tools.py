@@ -5,12 +5,12 @@ from pylibscheme import parser
 
 
 def colorize(g: parser.Graph):
-    colors_len = max(n.label.count(".") if n.label else 0 for n in g.nodes) + 1
+    colors_len = max(n.norm.count(".") if n.norm else 0 for n in g.nodes) + 1
     color_map = _get_colormap(colors_len)
     m = 0
     g = g.copy()
     for n in g.nodes:
-        level = n.label.count(".") if n.label else 0
+        level = n.norm.count(".") if n.norm else 0
         m = max([level, m])
         if n.graphics:
             n.graphics.fill = f'"{color_map[level]}"'

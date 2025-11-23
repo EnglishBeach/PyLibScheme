@@ -16,6 +16,9 @@ def create_import_graph(lib_path: str, out_file: Path = Path("out_pkg.gml")) -> 
         g = parser.Graph.load(file=gml)
         for n in g.nodes:
             n.name = n.label if n.label else n.name
+            label = n.label.split(".")[-1] if n.label else n.name.split(".")[-1]
+            label = label.replace('"', "")
+            n.label = f'"{label}"'
 
         g = tools.clusterize(g, ter_groups=False)
         g = tools.colorize(g)
